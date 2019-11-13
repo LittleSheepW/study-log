@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 根节点configuration 包含下面3个属性
+scan: 当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。
+scanPeriod: 设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。
+debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。 -->
+<configuration scan="false" scanPeriod="10 seconds" debug="false">
+
+    <!-- 该文件用于学习各节点作用，不用于集成 -->
+
+    <!-- configuration根节点下的子节点，分别有<appender>,<root>,<logger>,<property>,<contextName>,<conversionRule>,<springProfile> -->
+
+    <!-- 被包含的内容可以是文件、资源或 URL。 -->
+    <!-- 作为文件 用“file”属性包含一个文件。可以用相对路径，但是需要注意，当前目录是由应 用程序决定的，与配置文件的路径必要的联系。
+         作为资源 用“resource”属性包含一个资源，也就是在 class path 上的文件。
+         作为 URL 用“url”属性包括一个 URL。 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 子节点<contextName>：用来设置上下文名称，每个logger都关联到logger上下文，默认上下文名称为default。
+    但可以使用<contextName>设置成其他名字，用于区分不同应用程序的记录。一旦设置，不能修改。 -->
+    <contextName>study-log</contextName>
+
+    <!-- 子节点<property>：用来定义变量值，它有两个属性name和value，通过<property>定义的值会被插入到logger上下文中，可以使“${}”来使用变量。 -->
+    <property name="LOG_BASE_DIR" value="/logs"/>
+
+    <!-- 子节点<springProfile>:Spring profile是Spring 3引入的概念，主要用在项目多环境运行的情况下，通过激活方式实现多环境切换，
+    省去多环境切换时配置参数和文件的修改，相比较Maven profile简单实用，易于上手。并且Spring profile提供了多种激活方法，例如配置文件，注解，jvm参数设置等等
+    根据不同环境（prod:生产环境，test:测试环境，dev:开发环境）来定义不同的日志输出，在logback-spring.xml中使用 springProfile 节点来定义 -->
+    <!--本地开发的日志路径-->
+    <springProfile name="dev">
+        <property name="LOG_BASE_DIR" value="/logs/dev"/>
+    </springProfile>
+
+    <!--测试环境的日志路径-->
+    <springProfile name="test">
+        <property name="LOG_BASE_DIR" value="logs/test"/>
+    </springProfile>
+
+    <!--线上环境的日志路径-->
+    <springProfile name="prod">
+        <property name="LOG_BASE_DIR" value="logs/prod"/>
+    </springProfile>
+
+    <!-- Logback将执行日志事件输出的组件称为appender，appender的实现必须继承 ch.qos.logback.core.Appender 接口
+     它有两个必要属性name和class。name指定appender名称，class指定appender的全限定名
+    注：class="ch.qos.logback.core.rolling.RollingFileAppender"常见的日志输出到文件，随着应用的运行时间越来越长，
+    日志也会增长的越来越多，将他们输出到同一个文件并非一个好办法。RollingFileAppender用于切分文件日志
+
+    ch.qos.logback.core.ConsoleAppender 控制台输出
+    ch.qos.logback.core.FileAppender 文件输出
+    ch.qos.logback.core.RollingFileAppender 文件滚动输出
+
+    appender 是被命名的实体。因为有名字，所以能被引用。Appender 接口扩展了 FilterAttachable 接口，因此 appender 实例可被关联一个或多个过滤器。
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志文件输入格式
+        <encoder>:对日志进行格式化。必须指定，否则不会往文件输出内容
+        %d{HH: mm:ss.SSS}——日志输出时间
+        %thread——输出日志的进程名字，这在Web应用以及异步任务处理中很有用
+        %-5level——日志级别，并且使用5个字符靠左对齐
+        %logger{36}——日志输出者的名字
+        %msg——日志消息
+        %n——平台的换行符-->
+
+        <!-- Encoder 负责把事件转换为字节数组并把字节数组写出到合适的输出流。
+        因此，encoder 可以完全控制在什么时候、把什么样的字节写入到由其拥有者 appender 维护的输出流。 -->
+        <encoder>
+            <pattern>
+                ${FILE_LOG_PATTERN}
+            </pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+
+        <!-- <rollingPolicy>日志记录器的滚动策略，按日期、大小记录。当发生日志切换时，RollingFileAppender的切换行为。例如日志文件名的修改 -->
+        <!-- 要想 RollingFileAppender 起作用，必须同时设置 RollingPolicy 和 TriggeringPolicy。不过，如果 RollingPolicy
+        也实现了 TriggeringPolicy 接口，那么只需要设置 RollingPolicy。 TimeBasedRollingPolicy 既负责滚动也负责触发滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 每天日志归档路径以及格式 -->
+            <fileNamePattern>${LOG_BASE_DIR}/kkclass-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 最大MB 超过最大值，会重新建一个文件-->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 表示只保留最近天数的日志，防止日志填满整个磁盘空间。 -->
+            <maxHistory>2</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+
+        <!-- <filter>:过滤器,执行一个过滤器会有返回个枚举值。
+        返回DENY，日志将立即被抛弃不再经过其他过滤器；
+        返回NEUTRAL，有序列表里的下个过滤器过接着处理日志；
+        返回ACCEPT，日志会被立即处理，不再经过剩余过滤器。
+        为<Appender> 添加一个或多个过滤器后，可以用任意条件对日志进行过滤。<Appender> 有多个过滤器时，按照配置顺序执行。
+        最常用的过滤器：
+        LevelFilter： 级别过滤器，根据日志级别进行过滤。如果日志级别等于配置级别，过滤器会根据onMath 和 onMismatch接收或拒绝日志。
+        有以下子节点：
+        <level>:设置过滤级别
+        <onMatch>:用于配置符合过滤条件的操作
+        <onMismatch>:用于配置不符合过滤条件的操作
+         -->
+        <!-- 此日志文件只记录info级别的 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>info</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 子节点<logger>：用来设置某一个包或具体的某一个类的日志打印级别、以及指定<appender>
+    <logger>仅有一个name属性，一个可选的level和一个可选的addtivity属性。
+    name:用来指定受此logger约束的某一个包或者具体的某一个类。
+    level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF，有一个特殊值INHERITED 或者 同义词NULL，
+    代表强制执行上级的级别。如果未设置此属性，那么当前logger将会继承上级的级别。
+    addtivity: 是否向上级logger传递打印信息。默认是true。
+    logger可以包含零个或多个<appender-ref> 表示这个appender将会添加到logger。
+    -->
+    <logger name="org" level="info" addtivity="true"/>
+
+    <!-- 子节点<root>:它也是<logger>元素，但是它是根logger,是所有<logger>的上级。
+    root节点是必选节点，用来指定最基础的日志输出级别,只有一个level属性，因为name已经被命名为root,且已经是最上级了。
+    level:用来设置打印级别,不能设置为INHERITED或者同义词NULL。默认是DEBUG
+    可以包含零个或多个元素<appender-ref>，标识这个appender将会添加到这个logger。
+    如果 root 元素没 有引用任何 appender，就会失去所有 appender。
+     -->
+    <root level="INFO">
+        <!-- root节点将日志级别大于等于info的交给已经配置好的名为"FILE"的<appender>进行处理 -->
+        <appender-ref ref="FILE"/>
+    </root>
+
+
+</configuration>
